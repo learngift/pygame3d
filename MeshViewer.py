@@ -76,6 +76,14 @@ class Objet:
         for face in self.faces:
             face.render(env3d, self.points)
 
+    def rotateX(self, angle):
+        for p in self.points: p.rotateX(angle)
+
+    def rotateY(self, angle):
+        for p in self.points: p.rotateY(angle)
+
+    def rotateZ(self, angle):
+        for p in self.points: p.rotateZ(angle)
 
 def GetCube():
     o = Objet()
@@ -120,6 +128,23 @@ def interactive(env3d, main_object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    main_object.rotateY(math.pi / 20)
+                elif event.key == pygame.K_RIGHT:
+                    main_object.rotateY(-math.pi / 20)
+                elif event.key == pygame.K_UP:
+                    main_object.rotateX(math.pi / 20)
+                elif event.key == pygame.K_DOWN:
+                    main_object.rotateX(-math.pi / 20)
+                elif event.key == pygame.K_PAGEUP:
+                    main_object.rotateZ(math.pi / 20)
+                elif event.key == pygame.K_PAGEDOWN:
+                    main_object.rotateZ(-math.pi / 20)
+                elif event.key == pygame.K_KP_MINUS: # K_F1 si laptop
+                    env3d.zoom_factor /= 1.1
+                elif event.key == pygame.K_KP_PLUS: # K_F2
+                    env3d.zoom_factor *= 1.1
 
         main_object.display(env3d)
         pygame.display.flip()
