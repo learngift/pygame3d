@@ -46,7 +46,13 @@ class Point3D:
 class Face:
     def render(self, env3d, points):
         polygon = self.getPolygon(points, env3d)
-        pygame.draw.polygon(env3d.screen, WHITE, polygon, 1)
+        if env3d.colorize:
+            lc1 = int(64*self.lum_coeff(points, env3d.light_vector_1))
+            lc2 = int(64*self.lum_coeff(points, env3d.light_vector_2))
+            color = [ lc1 * 2, lc1 + lc2, lc2 ]
+            pygame.draw.polygon(env3d.screen, color, polygon)
+        else:
+            pygame.draw.polygon(env3d.screen, WHITE, polygon, 1)
 
 class Triangle(Face):
     def __init__(self, a, b, c):
@@ -59,6 +65,17 @@ class Triangle(Face):
         return (points[self.a].projection(env3d),
                 points[self.b].projection(env3d),
                 points[self.c].projection(env3d),)
+
+    def lum_coeff(self, points, lum):
+    	"""calcule le coefficient lumineux selon le vecteur lumière"""
+    	a, b, c = points[self.a], points[self.b], points[self.c]
+    	v1 = Point3D(b.x-a.x, b.y-a.y, b.z-a.z)
+    	v2 = Point3D(c.x-a.x, c.y-a.y, c.z-a.z)
+    	v = Point3D(v1.y * v2.z - v2.y * v1.z, \
+                    v1.z * v2.x - v2.z * v1.x, \
+                    v1.x * v2.y - v2.x * v1.y)
+    	sp = (v.x * lum.x + v.y * lum.y + v.z * lum.z) / v.norm()
+    	return sp + 1
 
 class Objet:
     """Un objet est une collection de points et de faces.
@@ -85,6 +102,24 @@ class Objet:
     def rotateZ(self, angle):
         for p in self.points: p.rotateZ(angle)
 
+    def readFile(self, filename):
+        self.points, self.faces = [], []
+        f = open(filename, 'r')
+        for line in f:
+            if line.startswith('#'): continue
+
+            values = line.split()
+            if not values: continue
+
+            if values[0] == 'v':
+                self.points.append(Point3D( float(values[1]), float(values[2]), float(values[3]) ))
+            elif values[0] == 'f':
+                p = []
+                for v in values[1:]:
+                    p.append(v.split('/')[0])
+                self.faces.append(Triangle( int(p[0]) - 1, int(p[1]) - 1, int(p[2]) - 1 ))
+        f.close()
+
 def GetCube():
     o = Objet()
     o.name = 'Cube'
@@ -106,7 +141,7 @@ def GetCube():
     o.faces.append (Triangle(1, 0, 4))
     o.faces.append (Triangle(1, 5, 3))
     o.faces.append (Triangle(7, 3, 5))
-    o.faces.append (Triangle(6, 2, 4))
+    o.faces.append (Triangle(6, 4, 2))
     o.faces.append (Triangle(0, 2, 4))
     return o
 
@@ -121,6 +156,7 @@ class Env3D:
         self.screen = pygame.display.set_mode(winsize)
         pygame.display.set_caption('3D viewer')
         self.wincenter = [winsize[0]/2, winsize[1]/2]
+        self.colorize = True
 
 def interactive(env3d, main_object):
     running = True
